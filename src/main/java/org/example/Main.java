@@ -290,7 +290,7 @@ public class Main {
                     System.out.println(totalBytesRecebidos);
                     System.out.println();
                     System.out.println("----------------------------------");
-                    Thread.sleep(5000);
+                    Thread.sleep(1000);
                 }
             } else {
                 System.out.println("Usuario inválido");
