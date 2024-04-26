@@ -33,15 +33,6 @@ public class Main {
         List<String> processosBloqueados = new ArrayList<>();
         Console console = System.console();
 
-        System.out.println(looca.getRede().getParametros());
-//        while (true) {
-//            System.out.print("Pacotes enviados: ");
-//            System.out.println(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(1).getPacotesEnviados());
-//            System.out.print("Pacotes recebidos: ");
-//            System.out.println(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(1).getPacotesRecebidos());
-//            System.out.println("----------------------------------");
-//            Thread.sleep(1000);
-//        }
 
         limparConsole();
         utils.exibirLogo();
@@ -60,8 +51,13 @@ public class Main {
             utils.centralizaTelaHorizontal(22);
             System.out.println("Senha:");
             utils.centralizaTelaHorizontal(22);
-            char[] passwordArray = console.readPassword();
-            String senha = new String(passwordArray);
+            String senha;
+            if (console != null) {
+                char[] passwordArray = console.readPassword();
+                senha = new String(passwordArray);
+            } else {
+                senha = sc.next();
+            }
 
             String query = """
                     SELECT funcionario_id, nome_funcionario, setor.setor_id from
@@ -143,10 +139,10 @@ public class Main {
 
 
 
-                                         __________________________________________
-                                         |    MÁQUINA CADASTRADA COM SUCESSO!     |
-                                         |________________________________________|
-                        """);
+                                             __________________________________________
+                                             |    MÁQUINA CADASTRADA COM SUCESSO!     |
+                                             |________________________________________|
+                            """);
                     Thread.sleep(2000);
                     if (execute == 0) {
                         utils.centralizaTelaHorizontal(22);
@@ -201,6 +197,7 @@ public class Main {
                 Looca janelaGroup = new Looca();
                 FucionalidadeConsole func = new FucionalidadeConsole();
 
+
                 while (maquinaCadastrada) {
                     for (Janela janela : janelaGroup.getGrupoDeJanelas().getJanelas()) {
                         for (int i = 0; i < processosBloqueados.size(); i++) {
@@ -221,6 +218,7 @@ public class Main {
                             Math.round((double) looca.getMemoria().getEmUso() / Math.pow(1024, 3) * 100.0) / 100.0,
                             idMaquina);
 
+
                     st = conn.createStatement();
                     st.executeUpdate(sqlHistorico);
                     Thread.sleep(1000);
@@ -239,8 +237,61 @@ public class Main {
                     }
                     utils.centralizaTelaHorizontal(8);
                     System.out.println("Processos bloqueados: " + processos);
-                }
 
+                    Long totalPacoteRecebidos = (long) 0;
+                    Long totalPacoteEnviados = (long) 0;
+                    Long totalBytesEnviados = (long) 0;
+                    Long totalBytesRecebidos = (long) 0;
+                    List<String> ipv4 = new ArrayList<>();
+                    List<String> interfaceRede = new ArrayList<>();
+
+
+                    utils.centralizaTelaVertical(2);
+                    System.out.println("----------------------------------");
+                    System.out.println();
+                    System.out.println("PARÂMETROS DA MÁQUINA:");
+                    System.out.println(looca.getRede().getParametros());
+                    System.out.println("----------------------------------");
+                    System.out.println();
+
+                    for (int i = 0; i < looca.getRede().getGrupoDeInterfaces().getInterfaces().size(); i++) {
+                        if (looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesRecebidos() != 0) {
+                            totalPacoteRecebidos += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesRecebidos();
+                            totalPacoteEnviados += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesEnviados();
+                            totalBytesEnviados += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getBytesEnviados();
+                            totalBytesRecebidos += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getBytesRecebidos();
+                            interfaceRede.add(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getNome());
+                            ipv4.add(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getEnderecoIpv4().get(0));
+                        }
+                    }
+
+                    System.out.println("INTERFACES DE REDE:");
+                    for (int i = 0; i < interfaceRede.size(); i++) {
+
+                        System.out.println((i + 1) + "° - " + interfaceRede.get(i));
+                    }
+                    System.out.println();
+                    System.out.println("IPV4 DA MAQUINA:");
+                    for (int i = 0; i < interfaceRede.size(); i++) {
+                        System.out.println((i + 1) + "° - " + ipv4.get(i));
+                    }
+                    System.out.println();
+
+                    System.out.println("----------------------------------");
+                    System.out.println();
+                    System.out.println("TRAFEGO DE DADOS NA REDE:");
+                    System.out.print("Pacotes enviados: ");
+                    System.out.println(totalPacoteEnviados);
+                    System.out.print("Pacotes recebidos: ");
+                    System.out.println(totalPacoteRecebidos);
+                    System.out.print("Byts enviados: ");
+                    System.out.println(totalBytesEnviados);
+                    System.out.print("Byts Recebidos: ");
+                    System.out.println(totalBytesRecebidos);
+                    System.out.println();
+                    System.out.println("----------------------------------");
+                    Thread.sleep(5000);
+                }
             } else {
                 System.out.println("Usuario inválido");
             }

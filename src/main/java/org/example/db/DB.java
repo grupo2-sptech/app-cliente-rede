@@ -12,7 +12,7 @@ public class DB {
     public static Connection getConection() {
         if (conn == null) {
             try {
-                conn = DriverManager.getConnection("jdbc:mysql://:3306/hardware_security", "root", "jhow");
+                conn = DriverManager.getConnection("jdbc:mysql://:3306/hardware_security", "dono", "123");
             } catch (SQLException e) {
                 throw new DbExeption(e.getMessage());
             }
