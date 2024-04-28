@@ -98,7 +98,6 @@ public class Main {
                 }
 
                 String sqlVerificarId = "SELECT processador_id, maquina_id FROM maquina WHERE processador_id = '%s'".formatted(looca.getProcessador().getId());
-
                 rt = st.executeQuery(sqlVerificarId);
                 if (rt.next()) {
                     idMaquina = rt.getInt("maquina_id");
@@ -191,6 +190,83 @@ public class Main {
 
                         st = conn.createStatement();
                         st.executeUpdate(sqlHistorico);
+
+
+                        Long totalPacoteRecebidos = (long) 0;
+                        Long totalPacoteEnviados = (long) 0;
+                        Long totalBytesEnviados = (long) 0;
+                        Long totalBytesRecebidos = (long) 0;
+                        List<String> ipv4 = new ArrayList<>();
+                        List<String> interfaceRede = new ArrayList<>();
+
+                        for (int i = 0; i < looca.getRede().getGrupoDeInterfaces().getInterfaces().size(); i++) {
+                            if (looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesRecebidos() != 0) {
+                                totalPacoteRecebidos += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesRecebidos();
+                                totalPacoteEnviados += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesEnviados();
+                                totalBytesEnviados += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getBytesEnviados();
+                                totalBytesRecebidos += looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getBytesRecebidos();
+                                interfaceRede.add(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getNome());
+                                ipv4.add(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getEnderecoIpv4().get(0));
+                            }
+                        }
+
+                        String sqlRede = """
+                                 insert into rede (id_rede, hostname, pacotes_enviados, pacotes_recebidos, fk_maquina) values (null,'%s',%d ,%d ,%d);
+                                """.formatted(looca.getRede().getParametros().getHostName(), totalPacoteEnviados, totalPacoteRecebidos, idMaquina);
+
+                        st = conn.createStatement();
+                        st.executeUpdate(sqlRede, Statement.RETURN_GENERATED_KEYS);
+                        Integer idRede = 0;
+                        ResultSet generatedKeys = st.getGeneratedKeys();
+                        if (generatedKeys.next()) {
+                            idRede = generatedKeys.getInt(1);
+                        }
+
+                        for (int i = 0; i < ipv4.size(); i++) {
+                            String sqlIpv4 = """
+                                    insert into ipv4 (id_ipv4, ipv4, fk_rede) values (null, '%s', %d);
+                                           """.formatted(ipv4.get(i), idRede);
+                            st = conn.createStatement();
+                            st.executeUpdate(sqlIpv4);
+                        }
+                    }
+                }
+
+                Integer idIp = 0;
+                Integer idRede = 0;
+
+                String queryRede = """
+                            SELECT id_ipv4, id_rede
+                            FROM rede
+                            JOIN ipv4 ON id_rede = fk_rede
+                            WHERE fk_maquina = %d;
+                        """.formatted(idMaquina);
+
+                st = conn.createStatement();
+                rt = st.executeQuery(queryRede);
+
+                List<Integer> contador = new ArrayList<>();
+
+                for (int i = 0; i < looca.getRede().getGrupoDeInterfaces().getInterfaces().size(); i++) {
+                    if (looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getPacotesRecebidos() != 0) {
+                        contador.add(i);
+                    }
+                }
+
+                Integer c = 0;
+                try (Statement stUpdate = conn.createStatement()) {
+                    while (rt.next()) {
+                        idIp = rt.getInt("id_ipv4");
+                        idRede = rt.getInt("id_rede");
+                        String ipv4Value = looca.getRede().getGrupoDeInterfaces().getInterfaces().get(contador.get(c)).getEnderecoIpv4().get(0);
+                        // Crie a consulta de atualização
+                        String queryIpUpdate = """
+                                    UPDATE ipv4
+                                    SET ipv4 = '%s'
+                                    WHERE id_ipv4 = %d;
+                                """.formatted(ipv4Value, idIp);
+                        stUpdate.executeUpdate(queryIpUpdate);
+                        c++;
                     }
                 }
 
@@ -199,6 +275,8 @@ public class Main {
 
 
                 while (maquinaCadastrada) {
+
+
                     for (Janela janela : janelaGroup.getGrupoDeJanelas().getJanelas()) {
                         for (int i = 0; i < processosBloqueados.size(); i++) {
                             if (janela.getTitulo().contains(processosBloqueados.get(i))) {
@@ -264,6 +342,12 @@ public class Main {
                             ipv4.add(looca.getRede().getGrupoDeInterfaces().getInterfaces().get(i).getEnderecoIpv4().get(0));
                         }
                     }
+
+                    String sqlPacortes = """
+                            update rede set pacotes_enviados = %d, pacotes_recebidos = %d where fk_maquina = %d;
+                                   """.formatted(totalPacoteEnviados, totalPacoteRecebidos, idMaquina);
+                    st = conn.createStatement();
+                    st.executeUpdate(sqlPacortes);
 
                     System.out.println("INTERFACES DE REDE:");
                     for (int i = 0; i < interfaceRede.size(); i++) {
