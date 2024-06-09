@@ -1,3 +1,0 @@
-user=root
-password=jhow
-dburl=jdbc:mysql://:3306/hardware_security
